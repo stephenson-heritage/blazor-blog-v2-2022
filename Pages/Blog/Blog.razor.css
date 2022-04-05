@@ -1,0 +1,5 @@
+.blog-entry {
+    border: 2px rgb(75, 42, 137) outset;
+    background-color: rgba(75, 42, 137, .3);
+    margin: 1vh 1vw;
+}

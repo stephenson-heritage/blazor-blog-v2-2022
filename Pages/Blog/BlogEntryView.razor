@@ -1,0 +1,29 @@
+@using blazor_blog_v2_2022.Models
+
+
+<article class="blog-entry">
+
+	<h4>@Entry.Title</h4>
+	<h5>@Entry.TimePosted</h5>
+	<div class="blog-entry-content">@((MarkupString)Entry.Content)</div>
+	<button @onclick="DeleteAsync">Delete</button>
+</article>
+
+@code {
+	[Parameter]
+	public BlogEntry Entry { get; set; } = new BlogEntry
+	{
+		Title = "invalid",
+		Content = "There was an error",
+		TimePosted = DateTime.Now
+	};
+
+	[Parameter]
+	public EventCallback<BlogEntry> OnDelete { get; set; }
+
+	public async Task DeleteAsync()
+	{
+		await OnDelete.InvokeAsync(Entry);
+	}
+
+}
