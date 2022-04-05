@@ -1,15 +1,24 @@
 ﻿@page "/blog"
 @using Models
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Identity
+
+
+@inject AuthenticationStateProvider authState
 @inject IDbContextFactory<ApplicationDbContext> CtxFactory
 
 <PageTitle>Blog</PageTitle>
 
 <h3>Blog</h3>
 
-<input type="text" placeholder="Title" @bind="title" />
-<input type="text" placeholder="Content" @bind="content" />
-<button @onclick="AddEntryAsync">Add Entry</button>
+
+@if (User != null && User.IsAuthenticated)
+{
+
+	<input type="text" placeholder="Title" @bind="title" />
+	<input type="text" placeholder="Content" @bind="content" />
+	<button @onclick="AddEntryAsync">Add Entry</button>
+}
 
 @foreach (var entry in blog)
 {
@@ -24,24 +33,33 @@
 
 	private string? title, content;
 
+
+	private System.Security.Principal.IIdentity? User;
+
 	protected override async Task OnInitializedAsync()
 	{
 		await updateBlogEntriesAsync();
-		@* var be = new BlogEntry { Title = "my first blog entry!", Content = "welcome to my blog!", TimePosted = DateTime.Now
-			};
 
-			blog.Add(be); *@
+		var authStateService = await authState.GetAuthenticationStateAsync();
+		if (authStateService != null)
+		{
+			User = authStateService.User.Identity;
+		}
+
 	}
 
 	public async Task DeleteAsync(BlogEntry entry)
 	{
-		using var ctx = await CtxFactory.CreateDbContextAsync();
-
-		if (ctx.Blog != null)
+		if (User != null && User.IsAuthenticated)
 		{
-			ctx.Blog.Remove(entry);
-			await ctx.SaveChangesAsync();
-			await updateBlogEntriesAsync();
+			using var ctx = await CtxFactory.CreateDbContextAsync();
+
+			if (ctx.Blog != null)
+			{
+				ctx.Blog.Remove(entry);
+				await ctx.SaveChangesAsync();
+				await updateBlogEntriesAsync();
+			}
 		}
 	}
 
@@ -53,21 +71,30 @@
 		if (ctx.Blog != null)
 		{
 			blog.AddRange(
-			await ctx.Blog.OrderByDescending(be => be.TimePosted).ToListAsync()
+			await ctx.Blog
+			.Include(u => u.User)
+			.OrderByDescending(be => be.TimePosted)
+			.ToListAsync()
 			);
 		}
 	}
 
 	private async void AddEntryAsync()
 	{
-		if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(content))
+		if (User != null && User.IsAuthenticated && !string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(content))
 		{
 			var be = new BlogEntry { Title = title, Content = content, TimePosted = DateTime.Now };
 
 
 			using var ctx = await CtxFactory.CreateDbContextAsync();
-			if (ctx.Blog != null)
+
+			if (ctx.Accounts != null && ctx.Blog != null)
 			{
+				var userInstance = await ctx.Accounts
+				.Where(a => a.UserName == User.Name)
+				.FirstOrDefaultAsync<IdentityUser>();
+
+				be.User = userInstance;
 
 				await ctx.Blog.AddAsync(be);
 

@@ -1,15 +1,53 @@
 @using blazor_blog_v2_2022.Models
-
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject AuthenticationStateProvider authState
+@inject IDbContextFactory<ApplicationDbContext> CtxFactory
 
 <article class="blog-entry">
 
 	<h4>@Entry.Title</h4>
 	<h5>@Entry.TimePosted</h5>
+	@if (Entry.User != null)
+	{
+		<div class="blog-user">
+			@Entry.User.UserName
+		</div>
+	}
+
 	<div class="blog-entry-content">@((MarkupString)Entry.Content)</div>
-	<button @onclick="DeleteAsync">Delete</button>
+
+	@if (Entry.BlogComments != null)
+	{
+		<div class="blog-comments">
+			@foreach (BlogComment comment in Entry.BlogComments)
+			{
+				<div class="blog-comment">
+					@if (@comment.User != null)
+					{
+						<div class="blog-comment-author">@comment.User.UserName</div>
+					}
+					<p>@comment.Content</p>
+				</div>
+			}
+		</div>
+	}
+
+	@if (User != null && User.IsAuthenticated)
+	{
+		<div>
+			<input @bind="comment" />
+			<button @onclick="AddCommentAsync">Add Comment</button>
+		</div>
+		<button @onclick="DeleteAsync">Delete</button>
+	}
 </article>
 
 @code {
+
+	private string? comment = "";
+
+
 	[Parameter]
 	public BlogEntry Entry { get; set; } = new BlogEntry
 	{
@@ -21,9 +59,73 @@
 	[Parameter]
 	public EventCallback<BlogEntry> OnDelete { get; set; }
 
+
+
+	private System.Security.Principal.IIdentity? User;
+
+	protected override async Task OnInitializedAsync()
+	{
+
+		var authStateService = await authState.GetAuthenticationStateAsync();
+		User = authStateService.User.Identity;
+
+		using var ctx = await CtxFactory.CreateDbContextAsync();
+
+		if (ctx.Comments != null)
+		{
+			Entry.BlogComments = await ctx.Comments.Where(c => c.BlogEntry.BlogEntryId == Entry.BlogEntryId).ToListAsync();
+		}
+
+
+	}
+
+	public async Task AddCommentAsync()
+	{
+		if (!string.IsNullOrWhiteSpace(comment) && User != null && User.IsAuthenticated)
+		{
+			using var ctx = await CtxFactory.CreateDbContextAsync();
+
+			if (ctx.Accounts != null && ctx.Blog != null && ctx.Comments != null)
+			{
+
+				var userInstance = await ctx.Accounts
+				.Where(a => a.UserName == User.Name)
+				.FirstOrDefaultAsync<IdentityUser>();
+
+				var entryInstance = await ctx.Blog
+				.Where(be => be.BlogEntryId == Entry.BlogEntryId)
+				.FirstOrDefaultAsync<BlogEntry>();
+
+				if (entryInstance != null)
+				{
+					var blogComment = new BlogComment
+					{
+						Content = comment,
+						TimePosted = DateTime.Now,
+						User = userInstance,
+						BlogEntry = entryInstance
+					};
+
+					entryInstance.BlogComments.Add(blogComment);
+
+					await ctx.SaveChangesAsync();
+
+					Entry.BlogComments.Clear();
+					Entry.BlogComments = await ctx.Comments.Where(c => c.BlogEntry.BlogEntryId == Entry.BlogEntryId).ToListAsync();
+
+					comment = "";
+				}
+			}
+
+		}
+	}
+
 	public async Task DeleteAsync()
 	{
-		await OnDelete.InvokeAsync(Entry);
+		if (User != null && User.IsAuthenticated)
+		{
+			await OnDelete.InvokeAsync(Entry);
+		}
 	}
 
 }

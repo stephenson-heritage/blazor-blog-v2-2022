@@ -1,25 +1,39 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace blazor_blog_v2_2022.Models;
 
 public class BlogEntry : IComparable<BlogEntry>
 {
-
 	public uint BlogEntryId { get; set; }
-	public string Title { get; set; } = "Blog Entry Title";
+
+
+	[Column(TypeName = "varchar(120)")]
+	public string? Title { get; set; }
+
 	public string Content { get; set; } = "";
 
-	[DataType(DataType.DateTime)]
-	[Column(TypeName = "DATETIME")]
-	public DateTime TimePosted { get; set; } = DateTime.Now;
+	[Column(TypeName = "datetime")]
+	public DateTime TimePosted { get; set; }
+
+	public virtual IdentityUser? User { get; set; }
+	public virtual ICollection<BlogComment> BlogComments {get;set;} = new List<BlogComment>();
 
 	public int CompareTo(BlogEntry? other)
 	{
 		if (other != null)
-			return -1 * TimePosted.CompareTo(other.TimePosted);
-
-		return 1;
+		{
+			if (this.TimePosted > other.TimePosted)
+			{
+				return -1;
+			}
+			else if (this.TimePosted < other.TimePosted)
+			{
+				return 1;
+			}
+		}
+		return 0;
 	}
 }
