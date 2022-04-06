@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject AuthenticationStateProvider authState
 @inject IDbContextFactory<ApplicationDbContext> CtxFactory
+@inject Microsoft.AspNetCore.Identity.UI.Services.IEmailSender mailer
 
 <article class="blog-entry">
 
@@ -112,6 +113,23 @@
 					entryInstance.BlogComments.Add(blogComment);
 
 					await ctx.SaveChangesAsync();
+
+					var accounts = await ctx.Accounts.ToListAsync();
+					foreach (var account in accounts)
+					{
+						await mailer.SendEmailAsync(
+						account.Email,
+						"Comment Added", $"<p>Someone added the comment:</p><div style=\"border:1px solid black\">{comment}</div>"
+						);
+					}
+
+					if (userInstance != null)
+					{
+						await mailer.SendEmailAsync(
+						userInstance.Email,
+						"Comment Added", $"<p>You added the comment:</p><div style=\"border:1px solid black\">{comment}</div>"
+						);
+					}
 
 					Entry.BlogComments.Clear();
 					Entry.BlogComments = await ctx.Comments

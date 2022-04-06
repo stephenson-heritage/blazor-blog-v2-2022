@@ -1,16 +1,20 @@
 using blazor_blog_v2_2022.Areas.Identity;
 using blazor_blog_v2_2022.Models;
+using blazor_blog_v2_2022.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 	 options.UseSqlite(connectionString), ServiceLifetime.Scoped, ServiceLifetime.Singleton);
 
@@ -24,6 +28,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
+builder.Services.AddTransient<IEmailSender, EMailTrap>();
 
 
 var app = builder.Build();
