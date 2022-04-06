@@ -73,7 +73,10 @@
 
 		if (ctx.Comments != null)
 		{
-			Entry.BlogComments = await ctx.Comments.Where(c => c.BlogEntry.BlogEntryId == Entry.BlogEntryId).ToListAsync();
+			Entry.BlogComments = await ctx.Comments
+			.Where(c => (c.BlogEntry != null ? c.BlogEntry.BlogEntryId : 0) == Entry.BlogEntryId)
+			.Include(c => c.User)
+			.ToListAsync();
 		}
 
 
@@ -111,7 +114,10 @@
 					await ctx.SaveChangesAsync();
 
 					Entry.BlogComments.Clear();
-					Entry.BlogComments = await ctx.Comments.Where(c => c.BlogEntry.BlogEntryId == Entry.BlogEntryId).ToListAsync();
+					Entry.BlogComments = await ctx.Comments
+					.Where(c =>
+					(c.BlogEntry != null ? c.BlogEntry.BlogEntryId : 0) == Entry.BlogEntryId)
+					.ToListAsync();
 
 					comment = "";
 				}
