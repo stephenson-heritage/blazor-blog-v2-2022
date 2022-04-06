@@ -24,8 +24,8 @@ public class EMailTrap : IEmailSender
 		msg.Body = body.ToMessageBody();
 
 		using SmtpClient client = new();
-		await client.ConnectAsync("smtp.mailtrap.io", 587, false);
-		await client.AuthenticateAsync("4cb4b7166c657e", "c53e244aa6514f");
+		await client.ConnectAsync(Configuration["Email:Server:host"], int.Parse(Configuration["Email:Server:port"]), false);
+		await client.AuthenticateAsync(Configuration["Email:Server:username"], Configuration["Email:Server:password"]);
 		await client.SendAsync(msg);
 		await client.DisconnectAsync(true);
 

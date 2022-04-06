@@ -11,6 +11,12 @@
     "AllowedHosts": "*",
     "Email": {
         "Name": "Luke's Blog",
-        "Address": "lstephenson@cegep-heritage.qc.ca"
+        "Address": "lstephenson@cegep-heritage.qc.ca",
+        "Server": {
+            "host": "smtp.mailtrap.io",
+            "port": 587,
+            "username": "4cb4b7166c657e",
+            "password": "c53e244aa6514f"
+        }
     }
 }
